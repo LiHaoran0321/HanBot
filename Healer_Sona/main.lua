@@ -108,7 +108,7 @@ local interruptableSpells = {
 
 local str = {[-1] = "P", [0] = "Q", [1] = "W", [2] = "E", [3] = "R"}
 
-local menu = menu("simplesona", "Simple Sona");
+local menu = menu("healersona", "Healer Sona");
 
 menu:menu("combo", "Combo")
 
