@@ -26,7 +26,7 @@ local common = module.load("HealerSona", "common")
 
 
 local spellQ = {
-	range = 855
+	range = 850
 }
 
 local spellW = {
