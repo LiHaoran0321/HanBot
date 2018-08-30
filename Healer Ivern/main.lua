@@ -29,7 +29,7 @@ local common = module.load("HealerIvern", "common")
 
 local spellQ = {
 	range = 1075,
-	speed = 1300,
+	speed = 1100,
 	width = 80,
 	delay = 0.25,
 	boundingRadiusMod = 1,
