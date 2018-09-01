@@ -1,3 +1,4 @@
-# HanBot Healer Sona 
+# Find me on Discord - Healer#0421
 
-Put the "Healer_Sona" file into your HanBot > riot > scripts folder to load the script!
+
+Put the script folder into your HanBot > riot > scripts folder to load the script!
