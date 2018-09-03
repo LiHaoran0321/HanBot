@@ -1,6 +1,7 @@
 
 --[[
-
+Version = 1.1
+1.1 - added auto ks on Q and W, added option to use auto W only to stun the target.
   _    _            _             _  __                           
  | |  | |          | |           | |/ /                           
  | |__| | ___  __ _| | ___ _ __  | ' / ___ _ __  _ __   ___ _ __  
@@ -78,7 +79,9 @@ menu:menu("harass", "Harass")
 menu.harass:boolean("qharass", "Use Q in Harass", true)
 menu.harass:boolean("wharass", "Use W in Harass", false)
 
-
+menu:menu("killsteal", "Kill Steal")
+menu.killsteal:boolean("qks", "Use Q to Kill Steal", true)
+menu.killsteal:boolean("wks", "Use W to Kill Steal", true)
 
 menu:menu("draws", "Draw Settings")
 menu.draws:boolean("drawq", "Draw Q Range", true)
@@ -98,8 +101,8 @@ for i, allies in ipairs(enemy) do
 	menu.misc.blacklist:boolean(allies.charName, "Block: " .. allies.charName, false)
 end
 menu.misc:boolean("autop", "Auto Q", true)
-menu.misc:boolean("autow", "Auto W", true)
-
+menu.misc:boolean("autow", "Auto W (normal)", true)
+menu.misc:boolean("autoww", "Auto W (only to stun)", false)
 menu:menu("keys", "Key Settings")
 menu.keys:keybind("combokey", "Combo Key", "Space", nil)
 menu.keys:keybind("harasskey", "Harass Key", "C", nil)
@@ -219,6 +222,26 @@ local function count_allies_in_range(pos, range)
 	return enemies_in_range
 end
 
+local QLevelDamage = {75, 115, 155, 195, 235}
+function QDamage(target)
+	local damage = 0
+	if player:spellSlot(0).level > 0 then
+		damage =
+			common.CalculateMagicDamage(target, (QLevelDamage[player:spellSlot(0).level] + (common.GetTotalAP() * 0.75)), player)
+	end
+	return damage
+end
+
+local WLevelDamage = {60, 85, 110, 135, 160}
+function WDamage(target)
+	local damage = 0
+	if player:spellSlot(1).level > 0 then
+		damage =
+			common.CalculateMagicDamage(target, (WLevelDamage[player:spellSlot(1).level] + (common.GetTotalAP() * 0.8)), player)
+	end
+	return damage
+end
+
 --Combo stuff
 
 local function Combo()
@@ -316,6 +339,59 @@ end
 	end
 end
 
+local function KillSteal()
+	local enemy = common.GetEnemyHeroes()
+	for i, enemies in ipairs(enemy) do
+		if enemies and common.IsValidTarget(enemies) and not common.CheckBuffType(enemies, 17) then
+			local hp = common.GetShieldedHealth("ap", enemies)
+			if menu.killsteal.qks:get() then
+				if
+					player:spellSlot(0).state == 0 and vec3(enemies.x, enemies.y, enemies.z):dist(player) < spellQ.range and
+						QDamage(enemies) >= hp
+				 then
+					local pos = preds.linear.get_prediction(spellQ, enemies)
+							if pos and pos.startPos:dist(pos.endPos) < spellQ.range and not preds.collision.get_prediction(spellQ, pos, enemies) then
+									player:castSpell("pos", 0, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
+									
+								end
+							
+				end
+			end
+		
+	
+
+	
+			if menu.killsteal.wks:get() then
+				if
+					player:spellSlot(1).state == 0 and common.CheckBuff(enemies, "kennenmarkofstorm") and vec3(enemies.x, enemies.y, enemies.z):dist(player) < spellW.range and
+						WDamage(enemies) >= hp
+				 then
+					player:castSpell("self", 1, player)
+				end
+			end
+		end
+	end
+end
+
+local function has_buff(unit, name)
+	for i = 0, unit.buffManager.count - 1 do
+    	local buff = unit.buffManager:get(i)
+    	if buff and buff.valid and string.lower(buff.name) == name then
+    		if game.time <= buff.endTime then
+	      		return true, buff.stacks
+    		end
+    	end
+  	end
+  	return false, 0
+end
+
+local function get_stacks(unit)
+	local buff, stacks = has_buff(unit, "kennenmarkofstorm")
+	if buff then
+		return stacks;
+	end
+	return 0;
+end
 
 local function OnTick()
 
@@ -334,14 +410,31 @@ local function OnTick()
 								end
 							end
 						
+					end
+				end
+			end
+		end
+	end
+
+
+	
+	if menu.misc.autoww:get() then
+		local target = GetTargetW()
+		if target and target.isVisible then
+			if common.IsValidTarget(target) then
+				if menu.misc.autoww:get() then
+					if target.pos:dist(player.pos) < spellW.range then
+						if  get_stacks(target) == 2  and player:spellSlot(1).state == 0 then
+							player:castSpell("self", 1, player)
 						end
 					end
 				end
 			end
 		end
+	end
 
-	
-		if menu.misc.autow:get() then
+
+	if menu.misc.autow:get() then
 
 		local target = GetTargetW()
 		if target and target.isVisible then
@@ -350,13 +443,19 @@ local function OnTick()
 					if target.pos:dist(player.pos) < spellW.range then
 						if common.CheckBuff(target, "kennenmarkofstorm") and player:spellSlot(1).state == 0 then
 						
-						player:castSpell("self", 1, player)
+							player:castSpell("self", 1, player)
+						end
 					end
 				end
 			end
 		end
 	end
-end
+
+
+
+
+
+
 
 	if common.CheckBuff(player, "KennenLightningRush") then
 		orb.core.set_pause_attack(math.huge)
@@ -366,7 +465,7 @@ end
 	end
 
 
-
+	KillSteal()
 	WGapcloser()
 	if menu.keys.combokey:get() then
 		Combo()
@@ -374,6 +473,7 @@ end
 	if menu.keys.harasskey:get() then
 		Harass()
 	end
+
 end
 
 
@@ -393,6 +493,7 @@ local function OnDraw()
 	end
 end
 TS.load_to_menu(menu)
-
 cb.add(cb.tick, OnTick)
+
+
 cb.add(cb.draw, OnDraw)
