@@ -1,4 +1,4 @@
-
+local version = "1.1"
 --[[
 
 
@@ -11,6 +11,8 @@
 
   Credits to Kornis for helping me along the way on creating my first script EVER! :D
   (also for letting me use Soraka script as a base for this one)
+
+  1.1 = made Auto Q a toggle, cleaned some code, added version.
 
 ]]
 local evade = module.seek("evade")
@@ -57,6 +59,7 @@ local interruptableSpells = {
 		{menuslot = "R", slot = 3, spellname = "caitlynaceinthehole", channelduration = 1}
 	},
 	["fiddlesticks"] = {
+				{menuslot = "W", slot = 1, spellname = "drain", channelduration = 5},
 		{menuslot = "R", slot = 3, spellname = "crowstorm", channelduration = 1.5}
 	},
 	["janna"] = {
@@ -100,9 +103,9 @@ local interruptableSpells = {
 		{menuslot = "R", slot = 3, spellname = "xerathlocusofpower2", channelduration = 3}
 	}
 }
--------------------
--- Menu creation --
--------------------
+
+-- Menu --
+
 
 
 
@@ -139,10 +142,11 @@ menu.draws:boolean("draww", "Draw W Range", true)
 menu.draws:color("colorw", "  ^- Color", 255, 233, 121, 121)
 menu.draws:boolean("drawe", "Draw E Range", false)
 menu.draws:color("colore", "  ^- Color", 255, 255, 255, 255)
+menu.draws:boolean("drawtoggle", "Draw AutoQ Toggle", true)
 
 menu:menu("misc", "Misc.")
-menu.misc:boolean("autop", "Auto Q", true)
-menu.misc:boolean("GapAS", "Keep this setting on :)", true)
+menu.misc:keybind("toggle", "Auto Q Toggle", "Z", nil)
+menu.misc:boolean("GapAS", "Ult dashers (gapclosers), not recommended", false)
 menu.misc:menu("interrupt", "Interrupt Settings")
 menu.misc.interrupt:boolean("intq", "Use R to Interrupt", true)
 menu.misc.interrupt:menu("interruptmenur", "Interruptable Spells")
@@ -281,6 +285,22 @@ local GetTargetR = function()
 	return TS.get_result(TargetSelectionR).obj
 end
 
+local tog = false
+local what = 0
+
+local function Toggle()
+	if menu.misc.toggle:get() then
+		if (tog == false and os.clock() > what) then
+			tog = true
+			what = os.clock() + 0.3
+		end
+		if (tog == true and os.clock() > what) then
+			tog = false
+			what = os.clock() + 0.3
+		end
+	end
+end
+
 local function count_enemies_in_range(pos, range)
 	local enemies_in_range = {}
 	for i = 0, objManager.enemies_n - 1 do
@@ -362,6 +382,23 @@ local function Harass()
 end
 
 -- Auto W and Q stuff
+local function AutoQ()
+	if tog then
+		return
+	end
+		local target = GetTargetQ()
+		if target and target.isVisible then
+			if common.IsValidTarget(target) then
+				
+					if target.pos:dist(player.pos) < spellQ.range then
+						player:castSpell("self", 0, player)
+						
+					end
+				
+			end
+		end
+	
+end
 
 local function OnTick()
 
@@ -369,20 +406,9 @@ if PrioritizedAllyW() then
 		player:castSpell("self", 1, PrioritizedAllyW())
 	end
 
-if menu.misc.autop:get() then
-		local target = GetTargetQ()
-		if target and target.isVisible then
-			if common.IsValidTarget(target) then
-				if menu.misc.autop:get() then
-					if target.pos:dist(player.pos) < spellQ.range then
-						player:castSpell("self", 0, player)
-						
-					end
-				end
-			end
-		end
-	end
 
+	AutoQ()
+	Toggle()
 	WGapcloser()
 	if menu.keys.combokey:get() then
 		Combo()
@@ -406,9 +432,22 @@ local function OnDraw()
 			graphics.draw_circle(player.pos, spellW.range, 2, menu.draws.colorw:get(), 100)
 		end
 	end
+
+	if menu.draws.drawtoggle:get() then
+		
+		if tog == true then
+			graphics.draw_text_2D("Auto Q: OFF", 18, pos.x - 20, pos.y + 40, graphics.argb(255, 218, 34, 34))
+		else
+			graphics.draw_text_2D("Auto Q: ON", 18, pos.x - 20, pos.y + 40, graphics.argb(255, 128, 255, 0))
+		end
+	end
 end
 TS.load_to_menu(menu)
 
 cb.add(cb.tick, OnTick)
 cb.add(cb.draw, OnDraw)
 cb.add(cb.spell, AutoInterrupt)
+print("-------------------------------------------------")
+print("Healer Sona v"..version..": Loaded!")
+print("Check the forums if you have the latest version!")
+print("-------------------------------------------------")
