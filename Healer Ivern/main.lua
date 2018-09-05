@@ -1,6 +1,6 @@
-
+local version = "1.1"
 --[[
-
+1.1 added version
 
   _    _            _             _____                    
  | |  | |          | |           |_   _|                   
@@ -29,8 +29,8 @@ local common = module.load("HealerIvern", "common")
 
 local spellQ = {
 	range = 1075,
-	speed = 1100,
-	width = 80,
+	speed = 1300,
+	width = 50,
 	delay = 0.25,
 	boundingRadiusMod = 1,
 	collision = {
@@ -753,3 +753,7 @@ TS.load_to_menu(menu)
 cb.add(cb.tick, OnTick)
 cb.add(cb.draw, OnDraw)
 cb.add(cb.spell, AutoInterrupt)
+print("-------------------------------------------------")
+print("Healer Ivern v"..version..": Loaded!")
+print("Check the forums if you have the latest version!")
+print("-------------------------------------------------")
