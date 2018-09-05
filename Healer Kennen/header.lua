@@ -5,7 +5,7 @@ return {
   name = "Kennen",
   riot = true,
   flag = {
-    text = "Healer Kennen",
+    text = "H E A L E R",
     color = {
       text = 0xffeeeeee,
       background1 = 0xFFaaffff,

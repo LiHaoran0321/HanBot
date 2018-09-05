@@ -1,7 +1,7 @@
-
+local version = "1.2"
 --[[
-Version = 1.1
 1.1 - added auto ks on Q and W, added option to use auto W only to stun the target.
+1.2 - added auto q toggle and version stuff
   _    _            _             _  __                           
  | |  | |          | |           | |/ /                           
  | |__| | ___  __ _| | ___ _ __  | ' / ___ _ __  _ __   ___ _ __  
@@ -90,6 +90,7 @@ menu.draws:boolean("draww", "Draw W Range", true)
 menu.draws:color("colorw", "  ^- Color", 255, 233, 121, 121)
 menu.draws:boolean("drawe", "Draw E Range", false)
 menu.draws:color("colore", "  ^- Color", 255, 255, 255, 255)
+menu.draws:boolean("drawtoggle", "Draw AutoQ Toggle", true)
 
 menu:menu("misc", "Misc.")
 menu.misc:boolean("GapAS", "Cast Q on gapcloser?", true)
@@ -100,7 +101,8 @@ local enemy = common.GetEnemyHeroes()
 for i, allies in ipairs(enemy) do
 	menu.misc.blacklist:boolean(allies.charName, "Block: " .. allies.charName, false)
 end
-menu.misc:boolean("autop", "Auto Q", true)
+
+menu.misc:keybind("toggle", "Auto Q Toggle", "Z", nil)
 menu.misc:boolean("autow", "Auto W (normal)", true)
 menu.misc:boolean("autoww", "Auto W (only to stun)", false)
 menu:menu("keys", "Key Settings")
@@ -199,6 +201,22 @@ end
 
 local GetTargetR = function()
 	return TS.get_result(TargetSelectionR).obj
+end
+
+local tog = false
+local what = 0
+
+local function Toggle()
+	if menu.misc.toggle:get() then
+		if (tog == false and os.clock() > what) then
+			tog = true
+			what = os.clock() + 0.3
+		end
+		if (tog == true and os.clock() > what) then
+			tog = false
+			what = os.clock() + 0.3
+		end
+	end
 end
 
 local function count_enemies_in_range(pos, range)
@@ -373,6 +391,32 @@ local function KillSteal()
 	end
 end
 
+
+
+local function AutoQ()
+	if tog then
+		return
+	end
+		local target = GetTargetQ()
+		if target and target.isVisible then
+			if common.IsValidTarget(target) then
+					if target.pos:dist(player.pos) < spellQ.range then
+						local pos = preds.linear.get_prediction(spellQ, target)
+							if pos and pos.startPos:dist(pos.endPos) < spellQ.range then
+								if not preds.collision.get_prediction(spellQ, pos, target) then
+									player:castSpell("pos", 0, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
+									
+								end
+							end
+						
+					end
+				end
+			end
+		end
+
+	
+
+
 local function has_buff(unit, name)
 	for i = 0, unit.buffManager.count - 1 do
     	local buff = unit.buffManager:get(i)
@@ -396,25 +440,7 @@ end
 local function OnTick()
 
 
-	if menu.misc.autop:get() then
-		local target = GetTargetQ()
-		if target and target.isVisible then
-			if common.IsValidTarget(target) then
-				if menu.misc.autop:get() then
-					if target.pos:dist(player.pos) < spellQ.range then
-						local pos = preds.linear.get_prediction(spellQ, target)
-							if pos and pos.startPos:dist(pos.endPos) < spellQ.range then
-								if not preds.collision.get_prediction(spellQ, pos, target) then
-									player:castSpell("pos", 0, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
-									
-								end
-							end
-						
-					end
-				end
-			end
-		end
-	end
+	
 
 
 	
@@ -464,7 +490,8 @@ local function OnTick()
 		orb.core.set_pause_attack(0)
 	end
 
-
+	AutoQ()
+	Toggle()
 	KillSteal()
 	WGapcloser()
 	if menu.keys.combokey:get() then
@@ -491,9 +518,22 @@ local function OnDraw()
 			graphics.draw_circle(player.pos, spellW.range, 2, menu.draws.colorw:get(), 100)
 		end
 	end
+
+	if menu.draws.drawtoggle:get() then
+		
+		if tog == true then
+			graphics.draw_text_2D("Auto Q: OFF", 18, pos.x - 20, pos.y + 40, graphics.argb(255, 218, 34, 34))
+		else
+			graphics.draw_text_2D("Auto Q: ON", 18, pos.x - 20, pos.y + 40, graphics.argb(255, 128, 255, 0))
+		end
+	end
 end
 TS.load_to_menu(menu)
 cb.add(cb.tick, OnTick)
 
 
 cb.add(cb.draw, OnDraw)
+print("-------------------------------------------------")
+print("Healer Kennen v"..version..": Loaded!")
+print("Check the forums if you have the latest version!")
+print("-------------------------------------------------")
