@@ -1,7 +1,7 @@
-local version = "1.1"
+﻿local version = "1.2"
 --[[
 1.1 added version
-
+1.2 twitch poison fix
   _    _            _             _____                    
  | |  | |          | |           |_   _|                   
  | |__| | ___  __ _| | ___ _ __    | |_   _____ _ __ _ __  

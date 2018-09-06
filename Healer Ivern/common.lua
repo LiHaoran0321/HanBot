@@ -101,12 +101,19 @@ function common.CountBuff(obj, buffname)
   end
   return 0
 end
+-- HanBot being potato >:c
 function common.CheckBuffType(obj, bufftype)
   if obj then
     for i = 0, obj.buffManager.count - 1 do
       local buff = obj.buffManager:get(i)
       if buff and buff.valid and buff.type == bufftype and (buff.stacks > 0 or buff.stacks2 > 0) then
-        return true
+        if buff.name == "TwitchDeadlyVenom" then
+          if buff.stacks > 0 then
+            return true
+          end
+        else
+          return true
+        end
       end
     end
   end
