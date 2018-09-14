@@ -1,4 +1,4 @@
-local version = "1.1"
+local version = "1.2"
 --[[
 
 
@@ -13,6 +13,7 @@ local version = "1.1"
   (also for letting me use Soraka script as a base for this one)
 
   1.1 = made Auto Q a toggle, cleaned some code, added version.
+  1.2 = added auto self heal, semi R and auto R when X enemies are in range.
 
 ]]
 local evade = module.seek("evade")
@@ -129,11 +130,21 @@ menu.wpriority:boolean("enable", "Enable Auto W", true)
 menu.wpriority:header("uhhh", "0 - Disabled, 1 - Biggest Priority, 5 - Lowest Priority")
 local enemy = common.GetAllyHeroes()
 for i, allies in ipairs(enemy) do
-	if allies.charName ~= "Sona" then
+	if allies.charName == "Sona" then
+		menu.wpriority:slider(allies.charName, "Priority: " .. allies.charName, 1, 0, 5, 1)
+		menu.wpriority:slider(allies.charName .. "hp", " ^- Health Percent: ", 50, 1, 100, 1)
+	else
 		menu.wpriority:slider(allies.charName, "Priority: " .. allies.charName, 1, 0, 5, 1)
 		menu.wpriority:slider(allies.charName .. "hp", " ^- Health Percent: ", 50, 1, 100, 1)
 	end
 end
+
+menu:menu("rset", "R settings")
+menu.rset:keybind("sr", "Semi R", "T", nil)
+menu.rset:boolean("autor", "Use auto R (experimental)", false)
+menu.rset:slider("hitr", "Min. Enemies to hit: ", 2, 0, 5, 1)
+menu.rset:slider("hittr", "enemy area clump size", 200, 0, 800, 1)
+
 
 menu:menu("draws", "Draw Settings")
 menu.draws:boolean("drawq", "Draw Q Range", true)
@@ -142,11 +153,11 @@ menu.draws:boolean("draww", "Draw W Range", true)
 menu.draws:color("colorw", "  ^- Color", 255, 233, 121, 121)
 menu.draws:boolean("drawe", "Draw E Range", false)
 menu.draws:color("colore", "  ^- Color", 255, 255, 255, 255)
-menu.draws:boolean("drawtoggle", "Draw AutoQ Toggle", true)
+menu.draws:boolean("drawtoggle", "Draw Auto Q Toggle", true)
 
 menu:menu("misc", "Misc.")
 menu.misc:keybind("toggle", "Auto Q Toggle", "Z", nil)
-menu.misc:boolean("GapAS", "Ult dashers (gapclosers), not recommended", false)
+menu.misc:boolean("GapAS", "Ult dashers (experimental)", false)
 menu.misc:menu("interrupt", "Interrupt Settings")
 menu.misc.interrupt:boolean("intq", "Use R to Interrupt", true)
 menu.misc.interrupt:menu("interruptmenur", "Interruptable Spells")
@@ -174,14 +185,14 @@ menu.keys:keybind("lastkey", "Last Hit", "X", nil)
 
 --Healing Priority list
 
-local function PrioritizedAllyW()
+local function PrioritizedAllyW() --Credits to Kornis!
 	if menu.wpriority.enable:get() then
 		local heroTarget = nil
 		for i = 0, objManager.allies_n - 1 do
 			local hero = objManager.allies[i]
 			if not player.isRecalling then
 				if
-					hero.team == TEAM_ALLY and not hero.isDead and hero ~= player and menu.wpriority[hero.charName]:get() > 0 and
+					hero.team == TEAM_ALLY and not hero.isDead and menu.wpriority[hero.charName]:get() > 0 and
 						hero.pos:dist(player.pos) <= spellW.range and
 						not hero.isRecalling and
 						menu.wpriority[hero.charName .. "hp"]:get() >= (hero.health / hero.maxHealth) * 100
@@ -250,6 +261,17 @@ local TargetSelectionFQ = function(res, obj, dist)
 		return true
 	end
 end
+local TargetSelection = function(res, obj, dist)
+	if dist < spellR.range then
+		res.obj = obj
+		return true
+	end
+end
+
+local GetTarget = function()
+	return TS.get_result(TargetSelection).obj
+end
+
 local GetTargetFQ = function()
 	return TS.get_result(TargetSelectionFQ).obj
 end
@@ -281,6 +303,7 @@ local TargetSelectionR = function(res, obj, dist)
 	end
 end
 
+
 local GetTargetR = function()
 	return TS.get_result(TargetSelectionR).obj
 end
@@ -300,6 +323,8 @@ local function Toggle()
 		end
 	end
 end
+
+
 
 local function count_enemies_in_range(pos, range)
 	local enemies_in_range = {}
@@ -381,6 +406,63 @@ local function Harass()
 	end
 end
 
+
+
+local GetNumberOfHits = function(res, obj, dist)
+	if dist > spellR.range then
+		return
+	end
+	local target = GetTarget()
+	local aaa = preds.linear.get_prediction(spellR, obj)
+
+		if
+			obj and target and target.pos:dist(obj.pos) < 350 and
+				obj.pos:dist(vec3(aaa.endPos.x, mousePos.y, aaa.endPos.y)) < 350 and
+				obj.pos:dist(player.pos) > 350
+		 then
+			res.num_hits = res.num_hits and res.num_hits + 1 or 1
+		end
+	
+end
+
+
+
+local GetPred = function()
+	local res = TS.loop(GetNumberOfHits)
+	if res.num_hits and res.num_hits > 1 then
+		return res.num_hits
+	end
+end
+
+local function AutoR()
+	local target = GetTarget()
+	if not common.IsValidTarget(target) then
+		return
+	end
+	if target and target.isVisible then
+		if menu.rset.autor:get() then
+			--[[if GetPred() and GetPred() >= menu.rset.hitr:get() then
+				local pos = preds.linear.get_prediction(spellR, target)
+				if pos and pos.startPos:dist(pos.endPos) < spellR.range then
+					player:castSpell("pos", 3, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
+				end
+			end]]
+			if (target.pos:dist(player) < spellR.range) then
+					local pos = preds.linear.get_prediction(spellR, target)
+					if
+						pos and pos.startPos:dist(pos.endPos) < spellR.range and
+							menu.rset.hitr:get() <= #count_enemies_in_range(target.pos, menu.rset.hittr:get())
+					 then
+						player:castSpell("pos", 3, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
+					end
+				end
+			end
+		end
+	
+
+end
+
+
 -- Auto W and Q stuff
 local function AutoQ()
 	if tog then
@@ -406,7 +488,19 @@ if PrioritizedAllyW() then
 		player:castSpell("self", 1, PrioritizedAllyW())
 	end
 
+	if menu.rset.sr:get() then
+		local target = GetTarget()
+		if common.IsValidTarget(target) and target then
+			if (target.pos:dist(player) < spellR.range) then
+				local pos = preds.linear.get_prediction(spellR, target)
+				if pos and pos.startPos:dist(pos.endPos) < spellR.range then
+					player:castSpell("pos", 3, vec3(pos.endPos.x, mousePos.y, pos.endPos.y))
+				end
+			end
+		end
+	end
 
+	AutoR()
 	AutoQ()
 	Toggle()
 	WGapcloser()
