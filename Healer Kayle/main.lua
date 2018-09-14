@@ -1,4 +1,4 @@
-local version = "1.0"
+local version = "1.1"
 --[[
 
   _   _            _             _  __           _      
@@ -11,6 +11,7 @@ local version = "1.0"
 (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧*:・ﾟ✧
 
 version 1.0 - released
+1.1 - added jungle and lane clear
 ]]
 
 
@@ -78,6 +79,15 @@ menu.rset:menu("yikes", "Ally Selection")
 			end 
 		end
 menu.rset:slider("allyhp", "HP% to press R on Ally", 15, 0, 100, 5)
+
+
+menu:menu("laneclear", "Lane Clear")
+menu.laneclear:boolean("lanee", "Use E in Lane Clear", true)
+
+
+menu:menu("jungleclear", "Jungle Clear")
+menu.jungleclear:boolean("usee", "Use E in Jungle Clear", true)
+
 
 
 menu:menu("draws", "Draw Settings")
@@ -305,6 +315,34 @@ local function AutoRAlly()
 		end
 	end
 end
+
+local function JungleClear()
+	if menu.jungleclear.usee:get() and player:spellSlot(2).state == 0 then
+		for i = 0, objManager.minions.size[TEAM_NEUTRAL] - 1 do
+			local minion = objManager.minions[TEAM_NEUTRAL][i]
+			if
+				minion and minion.isVisible and minion.moveSpeed > 0 and minion.isTargetable and not minion.isDead and
+					minion.pos:dist(player.pos) < spellE.range
+			 then
+				player:castSpell("self", 2)
+			end
+		end
+	end
+end
+
+local function LaneClear()
+	if menu.laneclear.lanee:get() and player:spellSlot(2).state == 0 then
+		for i = 0, objManager.minions.size[TEAM_ENEMY] - 1 do
+			local minion = objManager.minions[TEAM_ENEMY][i]
+			if
+				minion and minion.isVisible and minion.moveSpeed > 0 and minion.isTargetable and not minion.isDead and
+					minion.pos:dist(player.pos) < spellE.range
+			 then
+				player:castSpell("self", 2)
+			end
+		end
+	end
+end
 local function OnTick()
 	if PrioritizedAllyW() then
 		player:castSpell("obj", 1, PrioritizedAllyW())
@@ -317,6 +355,10 @@ local function OnTick()
 	end
 	if menu.keys.harasskey:get() then
 		Harass()
+	end
+	if menu.keys.clearkey:get() then
+		LaneClear()
+		JungleClear()
 	end
 end
 
