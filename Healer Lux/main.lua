@@ -196,7 +196,7 @@ menu:menu("harass", "Harass Settings")
 menu.harass:boolean("eharass", "Use E", true)
 
 menu:menu("rset", "R Settings")
-menu.rset:boolean("r", "Use R when killable in combo", true)
+menu.rset:boolean("r", "Use R when killable in combo", false)
 menu.rset:slider("Rrange", "R range: ", 2800, 0, 3340, 1)
 menu.rset:boolean("autor", "Use auto R when killable (KS)", true)
 menu.rset:header("dafuq", "Turn off R combo when using AutoR")
