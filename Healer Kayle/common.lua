@@ -1,5 +1,6 @@
 local pred = module.internal("pred")
-
+local crypt = module.internal("crypt")
+--crypt.enc_f("C:/Users/John/Desktop/GOOD/release/lol-nd/scripts/Healer Karthus 1.0/main.lua", "C:/Users/John/Desktop/Crypted/main.lua")
 local common = {}
 
 -- Delay Functions Call
