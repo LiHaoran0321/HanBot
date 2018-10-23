@@ -1,4 +1,6 @@
 local pred = module.internal("pred")
+local crypt = module.internal("crypt")
+--crypt.enc_f("C:/Users/John/Desktop/GOOD/release/lol-nd/scripts/Healer Ivern new/main.lua", "C:/Users/John/Desktop/Crypted/main.lua")
 
 local common = {}
 
