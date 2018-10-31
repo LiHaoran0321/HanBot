@@ -7,7 +7,9 @@ local HealerAIOchampions = {
   Kennen = true,
   Kindred = true,
   Lux = true,
-  Malzahar = true
+  Malzahar = true,
+  Trundle = true,
+  Illaoi = true
 }
 
 return {
