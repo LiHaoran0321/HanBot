@@ -10,7 +10,8 @@ local HealerAIOchampions = {
   Malzahar = true,
   Trundle = true,
   Illaoi = true,
-  Ekko = true
+  Ekko = true, Tristana = true,
+  Corki = true
 }
 
 return {
